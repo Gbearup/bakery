@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>麵包店工時統計</title>
+<style>
+body { font-family: Arial; padding:20px; }
+select, button, input { margin:2px; }
+.row { display:flex; align-items:center; gap:5px; margin-bottom:5px; flex-wrap: wrap; }
+.hours { font-size: 12px; color: #5555aa; min-width: 50px; text-align: center; }
+.summary { margin-top:20px; padding:10px; background:#f5f5f5; font-size: 12px; color: #333; }
+.summary h3 { font-size: 14px; color: #222; margin-bottom:5px; }
+
+/* 月曆樣式 */
+.calendar {
+display:grid;
+grid-template-columns: repeat(7, 1fr);
+gap:2px;
+margin-top:30px;
+}
+.calendar .day {
+border:1px solid #ccc;
+min-height:60px;
+position:relative;
+font-size:12px;
+padding:2px;
+background:#fff;
+overflow: hidden;
+}
+.day .date-num {
+position:absolute;
+top:2px; left:2px;
+font-size:10px;
+color:#666;
+}
+.day .shift {
+font-size:10px;
+padding:1px 2px;
+margin-top:12px;
+border-radius:3px;
+color:#fff;
+display:block;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.shift.A { background:#5a9bd4; } /* 淡藍 */
+.shift.B { background:#70ad47; } /* 淡綠 */
+.shift.C { background:#e06666; } /* 淡紅 */
+</style>
+</head>
+<body>
+
+<h2>麵包店工時統計</h2>
+
+月份：
+<select id="monthSelect" onchange="render()"></select>
+<button onclick="addRecord()">新增紀錄</button>
+<button onclick="exportRecords()">匯出存檔</button>
+<input type="file" id="importFile" style="display:none" onchange="importRecords(event)">
+<button onclick="document.getElementById('importFile').click()">匯入檔案</button>
+
+<div id="records"></div>
+
+<div class="summary">
+<h3>本月統計</h3>
+<div id="summary"></div>
+</div>
+
+<h3>月份日曆</h3>
+<div class="calendar" id="calendar"></div>
+
+<script>
+// ====== 員工設定 ======
+let employees = [
+{ name: "A", wage: 190 },
+{ name: "B", wage: 190 },
+{ name: "C", wage: 190 }
+];
+
+// ====== 資料 ======
+let records = JSON.parse(localStorage.getItem("workRecords")) || [];
+
+// ====== 初始化月份 ======
+function initMonths() {
+const select = document.getElementById("monthSelect");
+const now = new Date();
+const year = now.getFullYear();
+
+for(let m=1; m<=12; m++){
+let monthStr = `${year}-${String(m).padStart(2,"0")}`;
+let option = document.createElement("option");
+option.value = monthStr;
+option.text = monthStr;
+select.appendChild(option);
+}
+
+select.value = `${year}-${String(now.getMonth()+1).padStart(2,"0")}`;
+}
+
+// ====== 工具函式 ======
+function save(){ localStorage.setItem("workRecords", JSON.stringify(records)); }
+function generateDays(selected){ let html=""; for(let i=1;i<=31;i++){ html+=`<option value="${i}" ${i==selected?"selected":""}>${i}</option>`;} return html; }
+function generateHours(selected){ let html=""; for(let i=0;i<24;i++){ let h=String(i).padStart(2,"0")+":00"; html+=`<option value="${h}" ${h==selected?"selected":""}>${h}</option>`;} return html; }
+function calculateHours(start,end){ if(!start||!end) return 0; let s=parseInt(start.split(":")[0]); let e=parseInt(end.split(":")[0]); let diff=e-s; if(diff<0) diff+=24; return diff; }
+
+// ====== 新增紀錄（預設下午班 14:00–17:00）=====
+function addRecord(){
+records.push({ month: document.getElementById("monthSelect").value, name: employees[0].name, day: 1, start: "14:00", end: "17:00" });
+save();
+render();
+}
+
+// ====== 更新資料 ======
+function update(index,field,value){ records[index][field]=value; save(); render(); }
+
+// ====== 快速班別 ======
+function setMorning(index){ records[index].start="12:00"; records[index].end="17:00"; save(); render(); }
+function setAfternoon(index){ records[index].start="14:00"; records[index].end="17:00"; save(); render(); }
+function setEvening(index){ records[index].start="17:00"; records[index].end="21:00"; save(); render(); }
+function setFullDay(index){ records[index].start="12:00"; records[index].end="21:00"; save(); render(); }
+function removeRecord(index){ records.splice(index,1); save(); render(); }
+
+// ====== 匯出 / 合併匯入 ======
+function exportRecords(){
+const dataStr = JSON.stringify(records, null, 2);
+const blob = new Blob([dataStr], {type: "application/json"});
+const url = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = url;
+a.download = "records.json";
+a.click();
+URL.revokeObjectURL(url);
+}
+
+function importRecords(event){
+const file = event.target.files[0];
+if(!file) return;
+const reader = new FileReader();
+reader.onload = function(e){
+try{
+const imported = JSON.parse(e.target.result);
+if(Array.isArray(imported)){
+let added = 0;
+imported.forEach(r=>{
+const exists = records.some(rec=>rec.month===r.month && rec.day===r.day && rec.name===r.name && rec.start===r.start && rec.end===r.end);
+if(!exists){ records.push(r); added++; }
+});
+save();
+render();
+alert(`匯入完成！新增 ${added} 筆資料`);
+} else { alert("檔案格式錯誤！"); }
+} catch(err){ alert("檔案解析失敗！"); }
+};
+reader.readAsText(file);
+}
+
+// ====== 畫面更新 ======
+function render(){
+const container=document.getElementById("records");
+const summaryDiv=document.getElementById("summary");
+const calendarDiv=document.getElementById("calendar");
+container.innerHTML="";
+summaryDiv.innerHTML="";
+calendarDiv.innerHTML="";
+
+const currentMonth=document.getElementById("monthSelect").value;
+const [year,month]=currentMonth.split("-").map(Number);
+let monthRecords=records.filter(r=>r.month===currentMonth);
+
+// ===== 列表 =====
+monthRecords.forEach((r,i)=>{
+const globalIndex=records.indexOf(r);
+const hours=calculateHours(r.start,r.end);
+let div=document.createElement("div");
+div.className="row";
+div.innerHTML=`
+<select onchange="update(${globalIndex},'name',this.value)">
+${employees.map(e=>`<option value="${e.name}" ${e.name===r.name?"selected":""}>${e.name}</option>`).join("")}
+</select>
+<select onchange="update(${globalIndex},'day',this.value)">
+${generateDays(r.day)}
+</select>
+<select onchange="update(${globalIndex},'start',this.value)">
+${generateHours(r.start)}
+</select>
+<select onchange="update(${globalIndex},'end',this.value)">
+${generateHours(r.end)}
+</select>
+<span class="hours">${hours} 小時</span>
+<button onclick="setMorning(${globalIndex})">早班 12:00–17:00</button>
+<button onclick="setAfternoon(${globalIndex})">下午班 14:00–17:00</button>
+<button onclick="setEvening(${globalIndex})">晚班 17:00–21:00</button>
+<button onclick="setFullDay(${globalIndex})">全日班 12:00–21:00</button>
+<button onclick="removeRecord(${globalIndex})">刪除</button>
+`;
+container.appendChild(div);
+});
+
+// ===== 統計 ======
+employees.forEach(emp=>{
+let totalHours=0;
+monthRecords.filter(r=>r.name===emp.name).forEach(r=>{ totalHours+=calculateHours(r.start,r.end); });
+let salary=totalHours*emp.wage;
+summaryDiv.innerHTML+=`${emp.name}：${totalHours} 小時 ／ ${salary.toLocaleString()} 元<br>`;
+});
+
+// ===== 日曆 =====
+const firstDay = new Date(year, month-1, 1).getDay(); // 0=星期日
+let totalDays = new Date(year, month, 0).getDate(); // 當月天數
+let dayCount = 1;
+
+for(let i=0; i<6; i++){ // 最大 6 週
+for(let j=0; j<7; j++){
+let dayDiv=document.createElement("div");
+dayDiv.className="day";
+if(i===0 && j<firstDay){
+dayDiv.innerHTML=""; // 月初空格
+} else if(dayCount<=totalDays){
+dayDiv.innerHTML=`<div class="date-num">${dayCount}</div>`;
+let dayShifts=monthRecords.filter(r=>r.day==dayCount);
+dayShifts.forEach(r=>{
+let span=document.createElement("div");
+span.className=`shift ${r.name}`;
+span.textContent=`${r.name} ${r.start}-${r.end}`;
+dayDiv.appendChild(span);
+});
+dayCount++;
+}
+calendarDiv.appendChild(dayDiv);
+}
+}
+}
+
+initMonths();
+render();
+</script>
+</body>
+</html>
