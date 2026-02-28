@@ -52,8 +52,8 @@
             <select id="monthSelect" onchange="initCalendar()"></select>
             <select id="nameInput">
                 <option value="站起來">站起來</option>
-                <option value="工讀生A">佑廷</option>
-                <option value="工讀生B">子珈</option>
+                <option value="佑廷">佑廷</option>
+                <option value="子珈">子珈</option>
             </select>
             <select id="dayInput"></select>
             <div style="display:flex; width:100%; gap:5px; align-items:center;">
@@ -83,7 +83,7 @@
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwxvdNvCDBPN8Q0BwePsHJRkP5c0o12QNoTTfcomi8eHsOv1EgTEYerG7FpJ5rpO9aSzg/exec"; // 請替換成你的 GAS 網址
     let currentData = [];
-    const nameList = ["站起來", "工讀生A", "工讀生B"];
+    const nameList = ["站起來", "佑廷", "子珈"];
 
     // 初始化
     function init() {
