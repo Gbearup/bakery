@@ -52,8 +52,8 @@
             <select id="monthSelect" onchange="initCalendar()"></select>
             <select id="nameInput">
                 <option value="站起來">站起來</option>
-                <option value="工讀生A">工讀生A</option>
-                <option value="工讀生B">工讀生B</option>
+                <option value="工讀生A">佑廷</option>
+                <option value="工讀生B">子珈</option>
             </select>
             <select id="dayInput"></select>
             <div style="display:flex; width:100%; gap:5px; align-items:center;">
@@ -221,7 +221,7 @@
                 body: JSON.stringify(currentData)
             });
             document.getElementById('statusMsg').innerText = "✅ 雲端同步成功！";
-            alert("同步成功！資料已保險存入試算表。");
+            alert("同步成功！資料已存入試算表。");
         } catch(e) {
             document.getElementById('statusMsg').innerText = "❌ 同步失敗";
             alert("同步失敗，請檢查網路後重試。");
