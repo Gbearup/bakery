@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>麵包店工時統計 - 雲端同步版</title>
+<style>
+    /* CSS 部分保持不變 */
+    * { box-sizing: border-box; }
+    body { font-family: "Microsoft JhengHei", Arial; padding:20px; background: #f8f9fa; }
+    select, button, input { margin:2px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+    button { cursor: pointer; background: #fff; }
+    button:hover { background: #eee; }
+    .row { display:flex; align-items:center; gap:5px; margin-bottom:5px; flex-wrap: wrap; background:#fff; padding:8px; border-radius:8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .hours { font-size: 13px; font-weight: bold; color: #5555aa; min-width: 50px; text-align: center; }
+    .summary { margin-top:20px; padding:15px; background:#fff; border-radius: 8px; border: 1px solid #eee; }
+    .calendar-container { margin-top: 20px; background: #fff; padding: 10px; border-radius: 8px; }
+    .calendar { display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; }
+    .weekday { text-align: center; background: #5a9bd4; color: white; padding: 8px; font-size: 13px; border-radius: 4px; }
+    .day { border:1px solid #eee; min-height:80px; position:relative; font-size:12px; padding:4px; background:#fff; border-radius: 4px; }
+    .date-num { font-weight: bold; color:#999; margin-bottom: 4px; }
+    .shift { font-size:10px; padding:2px 4px; margin-top:2px; border-radius:3px; color:#fff; display:block; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+    .shift[data-name="站起來"] { background: #5a9bd4; }
+    .shift[data-name="佑佑"] { background: #70ad47; }
+    .shift[data-name="珈珈"] { background: #e06666; }
+</style>
+</head>
+<body>
+
+<h2>🍞 麵包店工時統計 <span id="syncStatus" style="font-size:13px; color:blue;">(準備中...)</span></h2>
+
+<div style="margin-bottom: 15px;">
+    月份：<select id="monthSelect" onchange="render()"></select>
+    <button onclick="addRecord()" style="background: #e3f2fd;">➕ 新增紀錄 (僅本機)</button>
+    <button onclick="syncToCloud()" style="background: #4caf50; color: white; border: none; font-weight: bold; padding: 5px 15px;">🔄 儲存並同步到雲端</button>
+</div>
+
+<div id="records"></div>
+
+<div class="summary">
+    <h3>📊 本月統計</h3>
+    <div id="summary"></div>
+</div>
+
+<div class="calendar-container">
+    <h3>🗓️ 月份日曆</h3>
+    <div class="calendar" style="margin-bottom: 4px;">
+        <div class="weekday">日</div><div class="weekday">一</div><div class="weekday">二</div>
+        <div class="weekday">三</div><div class="weekday">四</div><div class="weekday">五</div><div class="weekday">六</div>
+    </div>
+    <div id="calendar" class="calendar"></div>
+</div>
+
+<script>
+// 請確保此處 URL 與部署網址一致
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwxvdNvCDBPN8Q0BwePsHJRkP5c0o12QNoTTfcomi8eHsOv1EgTEYerG7FpJ5rpO9aSzg/exec"; 
+                
+let employees = [
+    { name: "站起來", wage: 190 }, 
+    { name: "佑佑", wage: 190 }, 
+    { name: "珈珈", wage: 190 }
+];
+let records = [];
+
+// 抓取雲端資料
+async function fetchFromCloud() {
+    const status = document.getElementById("syncStatus");
+    status.textContent = "☁️ 正在抓取雲端資料...";
+    try {
+        const response = await fetch(GAS_URL);
+        records = await response.json();
+        status.textContent = "✅ 雲端資料已載入";
+        localStorage.setItem("workRecords", JSON.stringify(records));
+        render();
+    } catch (e) {
+        status.textContent = "⚠️ 連線失敗，使用本地存檔";
+        records = JSON.parse(localStorage.getItem("workRecords")) || [];
+        render();
+    }
+}
+
+// 關鍵修改：手動同步函式
+async function syncToCloud() {
+    const status = document.getElementById("syncStatus");
+    status.textContent = "🚀 同步傳輸中，請稍候...";
+    
+    try {
+        // 發送目前畫面上的所有紀錄
+        const response = await fetch(GAS_URL, { 
+            method: "POST", 
+            body: JSON.stringify(records),
+            mode: 'no-cors' // 防止某些瀏覽器的 CSP 攔截，但這會讓你收不到 Success 字樣
+        });
+        
+        status.textContent = "✅ 雲端存檔成功！資料已保險";
+        // 閃爍一下綠色提示
+        status.style.color = "green";
+        setTimeout(() => { status.style.color = "blue"; }, 3000);
+    } catch (e) {
+        console.error(e);
+        status.textContent = "❌ 同步失敗，請檢查網路";
+    }
+}
+
+// 修改 save：現在只存到瀏覽器，不驚動雲端
+function save() {
+    localStorage.setItem("workRecords", JSON.stringify(records));
+}
+
+function initMonths() {
+    const select = document.getElementById("monthSelect");
+    const now = new Date();
+    for(let m=1; m<=12; m++){
+        let monthStr = `${now.getFullYear()}-${String(m).padStart(2,"0")}`;
+        let option = document.createElement("option");
+        option.value = monthStr; option.text = monthStr;
+        select.appendChild(option);
+    }
+    select.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+}
+
+function calculateHours(start,end){
+    if(!start||!end) return 0;
+    let s=parseInt(start.split(":")[0]); let e=parseInt(end.split(":")[0]);
+    let diff=e-s; if(diff<0) diff+=24; return diff;
+}
+
+function generateDays(selected){ let html=""; for(let i=1;i<=31;i++){ html+=`<option value="${i}" ${i==selected?"selected":""}>${i}日</option>`;} return html; }
+function generateHours(selected){ let html=""; for(let i=0;i<24;i++){ let h=String(i).padStart(2,"0")+":00"; html+=`<option value="${h}" ${h==selected?"selected":""}>${h}</option>`;} return html; }
+
+function addRecord(){
+    records.push({ month: document.getElementById("monthSelect").value, name: employees[0].name, day: 1, start: "14:00", end: "17:00" });
+    save(); render();
+}
+
+// 更新與刪除都只改本地
+function update(index,field,value){ records[index][field]=value; save(); render(); }
+function removeRecord(index){ if(confirm("確定刪除?")){ records.splice(index,1); save(); render(); } }
+
+// 快捷鍵
+function setMorning(index){ records[index].start="12:00"; records[index].end="17:00"; save(); render(); }
+function setAfternoon(index){ records[index].start="14:00"; records[index].end="17:00"; save(); render(); }
+function setEvening(index){ records[index].start="17:00"; records[index].end="21:00"; save(); render(); }
+function setFullDay(index){ records[index].start="12:00"; records[index].end="21:00"; save(); render(); }
+
+function render(){
+    const container=document.getElementById("records");
+    const summaryDiv=document.getElementById("summary");
+    const calendarDiv=document.getElementById("calendar");
+    container.innerHTML=""; summaryDiv.innerHTML=""; calendarDiv.innerHTML="";
+
+    const currentMonth=document.getElementById("monthSelect").value;
+    const [year,month]=currentMonth.split("-").map(Number);
+    let monthRecords=records.filter(r=>r.month===currentMonth);
+
+    monthRecords.forEach((r,i)=>{
+        const globalIndex=records.indexOf(r);
+        const hours=calculateHours(r.start,r.end);
+        let div=document.createElement("div");
+        div.className="row";
+        div.innerHTML=`
+            <select onchange="update(${globalIndex},'name',this.value)">${employees.map(e=>`<option value="${e.name}" ${e.name===r.name?"selected":""}>${e.name}</option>`).join("")}</select>
+            <select onchange="update(${globalIndex},'day',this.value)">${generateDays(r.day)}</select>
+            <select onchange="update(${globalIndex},'start',this.value)">${generateHours(r.start)}</select>
+            ~
+            <select onchange="update(${globalIndex},'end',this.value)">${generateHours(r.end)}</select>
+            <span class="hours">⏱️ ${hours}h</span>
+            <button onclick="setMorning(${globalIndex})">早</button><button onclick="setAfternoon(${globalIndex})">下</button>
+            <button onclick="setEvening(${globalIndex})">晚</button><button onclick="setFullDay(${globalIndex})">全</button>
+            <button onclick="removeRecord(${globalIndex})" style="color:red; border-color:#ffcccc;">刪除</button>
+        `;
+        container.appendChild(div);
+    });
+
+    employees.forEach(emp=>{
+        let totalHours=0;
+        monthRecords.filter(r=>r.name===emp.name).forEach(r=>{ totalHours+=calculateHours(r.start,r.end); });
+        if(totalHours>0) summaryDiv.innerHTML+=`<strong>${emp.name}</strong>：${totalHours}h / <span style="color:red">$${(totalHours*emp.wage).toLocaleString()}</span><br>`;
+    });
+
+    // 日曆繪製邏輯保持不變
+    const firstDay = new Date(year, month-1, 1).getDay();
+    const totalDays = new Date(year, month, 0).getDate();
+    let dayCount = 1;
+    for(let i=0; i<42; i++){
+        let dayDiv=document.createElement("div"); dayDiv.className="day";
+        if(i >= firstDay && dayCount <= totalDays){
+            dayDiv.innerHTML=`<div class="date-num">${dayCount}</div>`;
+            monthRecords.filter(r=>r.day==dayCount).forEach(r=>{
+                let span=document.createElement("div"); 
+                span.className=`shift`;
+                span.setAttribute('data-name', r.name);
+                span.textContent=`${r.name} ${r.start}-${r.end}`;
+                dayDiv.appendChild(span);
+            });
+            dayCount++;
+        }
+        calendarDiv.appendChild(dayDiv);
+        if(dayCount > totalDays && i >= (Math.ceil((firstDay + totalDays)/7)*7)-1) break;
+    }
+}
+
+initMonths();
+fetchFromCloud(); 
+</script>
+</body>
+</html>
