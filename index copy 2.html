@@ -3,94 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工時系統 v21.2 - GitHub 最終版</title>
+    <title>工時系統 v21.6 - 清爽排版版</title>
     <style>
         :root { --primary-color: #4CAF50; --secondary-color: #2196F3; --bg-color: #f4f7f6; }
         body { font-family: sans-serif; padding: 10px; background: var(--bg-color); }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h3 { margin-top: 0; font-size: 1.1em; color: #333; }
+        h3 { margin-top: 0; font-size: 1.2em; color: #333; }
         .control-panel { display: flex; flex-wrap: wrap; gap: 8px; }
-        select, button { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
+        select, button { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
         .btn-add { background: var(--primary-color); color: white; border: none; font-weight: bold; flex: 1; cursor: pointer; }
         
         /* 日曆樣式 */
-        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
-        .week-header { text-align: center; font-weight: bold; font-size: 12px; padding: 5px; background: #eee; border-radius: 4px; }
-        .day-box { border: 1px solid #f0f0f0; min-height: 80px; padding: 4px; background: #fff; border-radius: 4px; }
-        .empty-day { background: #f9f9f9; border: none; }
-        .day-num { font-weight: bold; font-size: 11px; color: #999; border-bottom: 1px solid #f9f9f9; margin-bottom: 4px; }
+        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 10px; }
+        .week-header { text-align: center; font-weight: bold; font-size: 13px; padding: 5px; background: #eee; border-radius: 4px; }
+        .day-box { border: 1px solid #e0e0e0; min-height: 80px; padding: 2px; background: #fff; border-radius: 4px; overflow: hidden; }
+        .day-num { font-weight: bold; font-size: 12px; color: #777; margin-bottom: 2px; border-bottom: 1px solid #f9f9f9; }
         
-        /* 標籤顏色 */
-        .tag { font-size: 10px; padding: 2px 4px; margin-bottom: 2px; border-radius: 3px; line-height: 1.2; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
-        .user-0 { background: #fff9c4; border-left: 3px solid #fbc02d; color: #7f6000; } 
-        .user-1 { background: #e1f5fe; border-left: 3px solid #03a9f4; color: #01579b; } 
-        .user-2 { background: #f3e5f5; border-left: 3px solid #9c27b0; color: #4a148c; }
-        .user-3 { background: #e8f5e9; border-left: 3px solid #4caf50; color: #1b5e20; }
-        .user-4 { background: #ffebee; border-left: 3px solid #f44336; color: #b71c1c; }
-        .user-default { background: #eeeeee; border-left: 3px solid #9e9e9e; }
-
-        .stats-box { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; border-left: 4px solid var(--secondary-color); }
-        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .btn-del { background: #ff5252; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        
-        .btn-sync { 
-            background: var(--secondary-color); color: white; border: none; width: 100%; padding: 15px; 
-            border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        /* 【關鍵修正】恢復清爽橫向排版 */
+        .tag { 
+            font-size: 11px; 
+            padding: 2px 4px; 
+            margin-bottom: 2px; 
+            border-radius: 3px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-left: 4px solid; 
         }
-        .btn-sync:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-sync:active { transform: scale(0.98); }
-        .status-bar { font-size: 13px; color: #666; text-align: center; margin-bottom: 10px; height: 20px; }
+        .user-0 { background: #fff9c4; border-left-color: #fbc02d; color: #5d4037; } 
+        .user-1 { background: #e1f5fe; border-left-color: #03a9f4; color: #01579b; } 
+        .user-2 { background: #f3e5f5; border-left-color: #9c27b0; color: #4a148c; }
+        .user-3 { background: #e8f5e9; border-left-color: #4caf50; color: #1b5e20; }
+        .user-4 { background: #ffebee; border-left-color: #f44336; color: #b71c1c; }
+
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .stats-table td { padding: 8px 0; border-bottom: 1px solid #eee; }
+        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .btn-edit { background: #ff9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px; }
+        .btn-del { background: #ff5252; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-sync { background: var(--secondary-color); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .status-bar { font-size: 12px; color: #888; text-align: center; }
     </style>
 </head>
 <body>
-
-    <div class="status-bar" id="statusMsg">🔄 正在連線至 Google 雲端...</div>
-
-    <div class="card">
-        <h3>➕ 新增工時 (GitHub 同步版)</h3>
+    <div class="status-bar" id="statusMsg">🔄 連線中...</div>
+    <div class="card" id="inputCard">
+        <h3 id="formTitle">➕ 新增/修改工時</h3>
         <div class="control-panel">
             <select id="monthSelect" onchange="initCalendar()"></select>
-            <select id="nameInput"><option>載入名單中...</option></select>
+            <select id="nameInput"></select>
             <select id="dayInput"></select>
             <div style="display:flex; width:100%; gap:5px;">
                 <select id="startTime" style="flex:1"></select>
                 <select id="endTime" style="flex:1"></select>
             </div>
-            <button class="btn-add" onclick="addRecord()">確認新增</button>
+            <button class="btn-add" id="submitBtn" onclick="addRecord()">確認新增</button>
         </div>
     </div>
-
+    <div class="card">
+        <h3>📊 本月工時統計</h3>
+        <table class="stats-table">
+            <tbody id="statsBody"></tbody>
+        </table>
+    </div>
     <div class="card">
         <h3>📅 班表預覽</h3>
         <div id="calendar"></div>
     </div>
-
     <div class="card">
-        <h3>📋 本月統計與清單</h3>
-        <div id="statsArea" class="stats-box">計算中...</div>
+        <h3>📋 詳細紀錄清單</h3>
         <div id="recordList"></div>
         <button class="btn-sync" id="syncBtn" onclick="syncToCloud()">☁️ 儲存並同步至雲端</button>
     </div>
 
 <script>
-    // 已為您填入最新的 GAS 網址
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwXPg3LmEBLhqkNXk9ZH73w7AZx0wp8oJ5iD6B80QjtIr2HicHPupz_WZDz-WVZJ_MIew/exec'; 
-
-    let nameList = [];
-    let currentData = [];
+    let nameList = []; let currentData = [];
 
     async function init() {
         const monthSel = document.getElementById('monthSelect');
-        const startSel = document.getElementById('startTime');
-        const endSel = document.getElementById('endTime');
-        
         for(let i=-1; i<=1; i++) {
             let d = new Date(); d.setMonth(d.getMonth() + i);
             let s = d.toISOString().substring(0, 7);
             monthSel.innerHTML += `<option value="${s}">${s}</option>`;
         }
         monthSel.value = new Date().toISOString().substring(0, 7);
-
+        const startSel = document.getElementById('startTime'); const endSel = document.getElementById('endTime');
         for(let h=8; h<24; h++) {
             ['00', '30'].forEach(m => {
                 let t = `${h<10?'0'+h:h}:${m}`;
@@ -98,25 +96,15 @@
                 endSel.innerHTML += `<option value="${t}">${t}</option>`;
             });
         }
-
-        // 抓取名單
-        try {
-            const resp = await fetch(`${GAS_URL}?action=getNames`);
-            const json = await resp.json();
-            nameList = json;
-            const nameSel = document.getElementById('nameInput');
-            nameSel.innerHTML = "";
-            nameList.forEach(n => nameSel.innerHTML += `<option value="${n}">${n}</option>`);
-            initCalendar();
-            loadFromCloud();
-        } catch(e) {
-            document.getElementById('statusMsg').innerText = "❌ 連線失敗，請檢查 GAS 權限設定";
-        }
+        const resp = await fetch(`${GAS_URL}?action=getNames`);
+        nameList = await resp.json();
+        const nameSel = document.getElementById('nameInput');
+        nameList.forEach(n => nameSel.innerHTML += `<option value="${n}">${n}</option>`);
+        initCalendar(); loadFromCloud();
     }
 
     function initCalendar() {
-        const daySel = document.getElementById('dayInput');
-        daySel.innerHTML = "";
+        const daySel = document.getElementById('dayInput'); daySel.innerHTML = "";
         const [y, m] = document.getElementById('monthSelect').value.split('-');
         const days = new Date(y, m, 0).getDate();
         for(let i=1; i<=days; i++) daySel.innerHTML += `<option value="${i}">${i}日</option>`;
@@ -124,113 +112,62 @@
     }
 
     function addRecord() {
-        currentData.push({
-            month: document.getElementById('monthSelect').value,
-            name: document.getElementById('nameInput').value,
-            day: document.getElementById('dayInput').value,
-            start: document.getElementById('startTime').value,
-            end: document.getElementById('endTime').value
-        });
+        currentData.push({ month: document.getElementById('monthSelect').value, name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: document.getElementById('startTime').value, end: document.getElementById('endTime').value });
         renderView();
     }
 
-    function deleteRecord(idx) {
-        if(confirm("確定要刪除這筆紀錄嗎？")) { 
-            currentData.splice(idx, 1); 
-            renderView(); 
-        }
+    function editRecord(idx) {
+        const data = currentData[idx];
+        document.getElementById('monthSelect').value = data.month;
+        document.getElementById('nameInput').value = data.name;
+        initCalendar();
+        document.getElementById('dayInput').value = parseInt(data.day);
+        document.getElementById('startTime').value = data.start;
+        document.getElementById('endTime').value = data.end;
+        currentData.splice(idx, 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        renderView();
     }
+
+    function deleteRecord(idx) { if(confirm("確定刪除？")) { currentData.splice(idx, 1); renderView(); } }
 
     function renderView() {
         const selectedMonth = document.getElementById('monthSelect').value;
-        const calDiv = document.getElementById('calendar');
-        const listDiv = document.getElementById('recordList');
-        const statsDiv = document.getElementById('statsArea');
-        calDiv.innerHTML = ""; listDiv.innerHTML = "";
+        const calDiv = document.getElementById('calendar'); const listDiv = document.getElementById('recordList'); const statsBody = document.getElementById('statsBody');
+        calDiv.innerHTML = ""; listDiv.innerHTML = ""; statsBody.innerHTML = "";
         
-        ['日','一','二','三','四','五','六'].forEach((d, idx) => {
-            const isWeekend = (idx === 0 || idx === 6);
-            calDiv.innerHTML += `<div class="week-header" style="${isWeekend ? 'color:#ff5252' : ''}">${d}</div>`;
-        });
-
+        ['日','一','二','三','四','五','六'].forEach((d, i) => calDiv.innerHTML += `<div class="week-header">${d}</div>`);
         const [y, m] = selectedMonth.split('-');
         const firstDay = new Date(y, m - 1, 1).getDay(); 
         for (let s = 0; s < firstDay; s++) calDiv.innerHTML += `<div class="day-box empty-day"></div>`;
 
+        let userStats = {}; nameList.forEach(n => userStats[n] = { completed: 0, total: 0 });
         const daysInMonth = new Date(y, m, 0).getDate();
-        let stats = {}; nameList.forEach(n => stats[n] = 0);
+        const today = new Date();
 
         for(let i=1; i<=daysInMonth; i++) {
-            const currentWeekDay = new Date(y, m - 1, i).getDay();
-            const isWeekend = (currentWeekDay === 0 || currentWeekDay === 6);
-            const boxBg = isWeekend ? 'background-color: #fff5f5;' : '';
-            const numStyle = isWeekend ? 'color: #ff5252;' : '';
-
-            const dayRecords = currentData
-                .filter(d => d.month === selectedMonth && d.day == i)
-                .sort((a, b) => parseInt(a.start.replace(':','')) - parseInt(b.start.replace(':','')));
-
-            let tagsHtml = dayRecords.map(d => {
-                const uIdx = nameList.indexOf(d.name);
-                return `<div class="tag user-${uIdx !== -1 ? uIdx : 'default'}">${d.name}<br>${d.start}-${d.end}</div>`;
-            }).join('');
+            const dayRecords = currentData.filter(d => d.month === selectedMonth && parseInt(d.day) === i).sort((a, b) => a.start.localeCompare(b.start));
             
-            calDiv.innerHTML += `
-                <div class="day-box" style="${boxBg}">
-                    <div class="day-num" style="${numStyle}">${i}</div>
-                    ${tagsHtml}
-                </div>`;
-        }
-
-        const monthRecords = currentData
-            .filter(d => d.month === selectedMonth)
-            .sort((a,b) => {
-                if (a.day !== b.day) return a.day - b.day;
-                return parseInt(a.start.replace(':','')) - parseInt(b.start.replace(':',''));
+            dayRecords.forEach(d => {
+                const hours = (parseInt(d.end.split(':')[0]) + parseInt(d.end.split(':')[1])/60) - (parseInt(d.start.split(':')[0]) + parseInt(d.start.split(':')[1])/60);
+                userStats[d.name].total += hours > 0 ? hours : 0;
             });
 
-        monthRecords.forEach((d) => {
-            const h = (parseInt(d.end.split(':')[0]) + parseInt(d.end.split(':')[1])/60) - (parseInt(d.start.split(':')[0]) + parseInt(d.start.split(':')[1])/60);
-            stats[d.name] += (h > 0 ? h : 0);
-            listDiv.innerHTML += `<div class="record-item"><span><strong>${d.day}日</strong> ${d.name} (${d.start}-${d.end})</span><button class="btn-del" onclick="deleteRecord(${currentData.indexOf(d)})">刪除</button></div>`;
-        });
-
-        let sHtml = "<strong>📊 總時數統計：</strong><br>";
-        nameList.forEach(n => { if(stats[n]>0) sHtml += `${n}: ${stats[n].toFixed(1)} 小時<br>`; });
-        statsDiv.innerHTML = sHtml;
-    }
-
-    async function loadFromCloud() {
-        try {
-            const resp = await fetch(`${GAS_URL}?action=getData`);
-            const data = await resp.json();
-            currentData = data;
-            document.getElementById('statusMsg').innerText = "✅ 雲端載入完成";
-            renderView();
-        } catch(e) {
-            document.getElementById('statusMsg').innerText = "❌ 資料載入失敗";
+            // 【重點】這裡改回原本的清爽橫向排版
+            let tagsHtml = dayRecords.map(d => `<div class="tag user-${nameList.indexOf(d.name) % 5}"><span>${d.name}</span><span>${d.start}-${d.end}</span></div>`).join('');
+            calDiv.innerHTML += `<div class="day-box"><div class="day-num">${i}</div>${tagsHtml}</div>`;
         }
+
+        nameList.forEach(name => { if (userStats[name].total > 0) statsBody.innerHTML += `<tr><td>${name}</td><td>${userStats[name].total.toFixed(1)} hr</td></tr>`; });
+        currentData.filter(d => d.month === selectedMonth).sort((a,b) => parseInt(a.day) - parseInt(b.day)).forEach((d, idx) => {
+            listDiv.innerHTML += `<div class="record-item"><span>${d.day}日 ${d.name} ${d.start}-${d.end}</span><div><button class="btn-edit" onclick="editRecord(${currentData.indexOf(d)})">修改</button><button class="btn-del" onclick="deleteRecord(${currentData.indexOf(d)})">刪除</button></div></div>`;
+        });
     }
 
     async function syncToCloud() {
-        const btn = document.getElementById('syncBtn');
-        btn.disabled = true;
-        document.getElementById('statusMsg').innerText = "⏳ 正在同步...";
-        try {
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(currentData)
-            });
-            document.getElementById('statusMsg').innerText = "✅ 同步指令已送出！";
-            alert("同步指令已送出！請稍後重整確認資料。");
-            btn.disabled = false;
-        } catch(e) {
-            alert("同步失敗");
-            btn.disabled = false;
-        }
+        await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(currentData) });
+        alert("已同步！");
     }
-
     window.onload = init;
 </script>
 </body>
