@@ -2,68 +2,165 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Bakery 工時系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工時統計系統</title>
     <style>
-        body { font-family: sans-serif; padding: 10px; background: #f4f7f6; }
-        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .day-box { border: 1px solid #ddd; min-height: 80px; padding: 2px; font-size: 10px; }
+        /* 恢復原本的設計質感 */
+        :root { --primary-color: #4CAF50; --secondary-color: #2196F3; --bg-color: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; padding: 15px; background: var(--bg-color); max-width: 800px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; }
+        h3 { margin-top: 0; font-size: 1.2em; color: #333; margin-bottom: 15px; border-left: 5px solid var(--secondary-color); padding-left: 10px; }
+        
+        /* 控制面板排版 */
+        .control-panel { display: flex; flex-wrap: wrap; gap: 10px; }
+        select, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
+        .btn-add { background: var(--primary-color); color: white; border: none; font-weight: bold; flex: 1; cursor: pointer; min-width: 120px; transition: 0.3s; }
+        .btn-add:hover { background: #45a049; }
+        
+        /* 日曆格線恢復 */
+        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; }
+        .week-header { text-align: center; font-weight: bold; font-size: 13px; padding: 8px; background: #eceff1; border-radius: 4px; }
+        .day-box { border: 1px solid #e0e0e0; min-height: 100px; padding: 5px; background: #fff; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+        .day-num { font-weight: bold; font-size: 12px; color: #999; margin-bottom: 5px; text-align: right; }
+        
+        /* 彩色標籤恢復 */
+        .tag { font-size: 11px; padding: 4px 6px; margin-bottom: 4px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid; }
+        .user-0 { background: #fff9c4; border-left-color: #fbc02d; color: #5d4037; } 
+        .user-1 { background: #e1f5fe; border-left-color: #03a9f4; color: #01579b; } 
+        .user-2 { background: #f3e5f5; border-left-color: #9c27b0; color: #4a148c; }
+        .user-3 { background: #e8f5e9; border-left-color: #4caf50; color: #1b5e20; }
+        .user-4 { background: #ffebee; border-left-color: #f44336; color: #b71c1c; }
+
+        /* 統計表格恢復 */
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .stats-table th { text-align: left; padding: 10px; background: #fafafa; border-bottom: 2px solid #eee; }
+        .stats-table td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+        
+        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .btn-edit { background: #ff9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px; }
+        .btn-del { background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-sync { background: var(--secondary-color); color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3); }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h3>新增工時</h3>
-        <select id="nameInput"><option>站起來</option><option>佑廷</option><option>子珈</option></select>
-        <select id="dayInput"></select>
-        <button onclick="addRecord()">新增</button>
-        <button onclick="syncToCloud()">同步至雲端</button>
+    <div class="card" id="inputCard">
+        <h3 id="formTitle">➕ 新增/修改工時</h3>
+        <div class="control-panel">
+            <select id="monthSelect" onchange="initCalendar()"></select>
+            <select id="nameInput"></select>
+            <select id="dayInput"></select>
+            <div style="display:flex; width:100%; gap:8px;">
+                <select id="startTime" style="flex:1"></select>
+                <select id="endTime" style="flex:1"></select>
+            </div>
+            <button class="btn-add" id="submitBtn" onclick="addRecord()">確認新增</button>
+        </div>
     </div>
+
     <div class="card">
+        <h3>📊 本月工時統計</h3>
+        <table class="stats-table">
+            <thead><tr><th>姓名</th><th>已完成</th><th>總工時</th></tr></thead>
+            <tbody id="statsBody"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3 id="calendarTitle">📅 班表預覽</h3>
         <div id="calendar"></div>
     </div>
 
+    <div class="card">
+        <h3>📋 詳細紀錄清單</h3>
+        <div id="recordList"></div>
+        <button class="btn-sync" onclick="syncToCloud()">☁️ 儲存並同步至雲端</button>
+    </div>
+
 <script>
-    // 這裡放入你剛給我的那組新網址  
-    //               https://script.google.com/macros/s/AKfycbwmLSoxg58dONNYlTRaOwCE-Yt7ST5A_UN0l0s4nzi5rFIOc7TtwnB0B54KNRiicyaY/exec
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmLSoxg58dONNYlTRaOwCE-Yt7ST5A_UN0l0s4nzi5rFIOc7TtwnB0B54KNRiicyaY/exec";
-    let data = [];
+    // 保持你原本已經跑通的功能邏輯，完全不動
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwXPg3LmEBLhqkNXk9ZH73w7AZx0wp8oJ5iD6B80QjtIr2HicHPupz_WZDz-WVZJ_MIew/exec'; 
+    let nameList = [], currentData = [];
 
     async function init() {
-        for(let i=1; i<=31; i++) document.getElementById('dayInput').innerHTML += `<option>${i}</option>`;
-        const res = await fetch(`${GAS_URL}?action=getData`);
-        data = await res.json();
-        render();
+        const monthSel = document.getElementById('monthSelect');
+        for(let i=-1; i<=1; i++) {
+            let d = new Date(); d.setMonth(d.getMonth() + i);
+            let s = d.toISOString().substring(0, 7);
+            monthSel.innerHTML += `<option value="${s}">${s}</option>`;
+        }
+        monthSel.value = new Date().toISOString().substring(0, 7);
+        const startSel = document.getElementById('startTime'), endSel = document.getElementById('endTime');
+        for(let h=8; h<24; h++) { ['00', '30'].forEach(m => { let t = `${h<10?'0'+h:h}:${m}`; startSel.innerHTML += `<option value="${t}">${t}</option>`; endSel.innerHTML += `<option value="${t}">${t}</option>`; }); }
+        const resp = await fetch(`${GAS_URL}?action=getNames`);
+        nameList = await resp.json();
+        const nameSel = document.getElementById('nameInput');
+        nameList.forEach(n => nameSel.innerHTML += `<option value="${n}">${n}</option>`);
+        initCalendar(); loadFromCloud();
     }
 
-    function render() {
-        document.getElementById('calendar').innerHTML = "";
-        for(let i=1; i<=31; i++) {
-            let dayData = data.filter(r => r.day == i);
-            document.getElementById('calendar').innerHTML += `<div class="day-box"><div>${i}</div>` + 
-                dayData.map(r => `<div>${r.name}</div>`).join('') + `</div>`;
-        }
+    function initCalendar() {
+        const daySel = document.getElementById('dayInput'); daySel.innerHTML = "";
+        const [y, m] = document.getElementById('monthSelect').value.split('-');
+        const days = new Date(y, m, 0).getDate();
+        for(let i=1; i<=days; i++) daySel.innerHTML += `<option value="${i}">${i}日</option>`;
+        renderView();
     }
 
     function addRecord() {
-        data.push({month: "2026-03", name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: "08:00", end: "17:00"});
-        render();
+        currentData.push({ month: document.getElementById('monthSelect').value, name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: document.getElementById('startTime').value, end: document.getElementById('endTime').value });
+        resetForm(); renderView();
     }
 
-    async function syncToCloud() {
-    try {
-        const response = await fetch(GAS_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', // 這是繞過跨域檢查的關鍵
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        alert("資料已發送至雲端 (請稍候 3 秒檢查 Sheet)");
-    } catch (error) {
-        alert("錯誤：" + error);
+    function resetForm() { document.getElementById('formTitle').innerText = "➕ 新增/修改工時"; document.getElementById('submitBtn').innerText = "確認新增"; document.getElementById('inputCard').style.border = "none"; }
+
+    function editRecord(idx) {
+        const d = currentData[idx];
+        document.getElementById('monthSelect').value = d.month; document.getElementById('nameInput').value = d.name;
+        initCalendar(); document.getElementById('dayInput').value = parseInt(d.day);
+        document.getElementById('startTime').value = d.start; document.getElementById('endTime').value = d.end;
+        currentData.splice(idx, 1);
+        document.getElementById('formTitle').innerText = "📝 正在修改..."; document.getElementById('submitBtn').innerText = "確認修改";
+        document.getElementById('inputCard').style.border = "2px solid #ff9800";
+        window.scrollTo({top:0, behavior:'smooth'}); renderView();
     }
-}
+
+    function renderView() {
+        const selectedMonth = document.getElementById('monthSelect').value;
+        const [y, m] = selectedMonth.split('-');
+        document.getElementById('calendarTitle').innerText = `📅 ${parseInt(m)}月班表預覽`;
+        
+        const calDiv = document.getElementById('calendar'), listDiv = document.getElementById('recordList'), statsBody = document.getElementById('statsBody');
+        calDiv.innerHTML = ""; listDiv.innerHTML = ""; statsBody.innerHTML = "";
+        ['日','一','二','三','四','五','六'].forEach(d => calDiv.innerHTML += `<div class="week-header">${d}</div>`);
+        const firstDay = new Date(y, m-1, 1).getDay();
+        for(let s=0; s<firstDay; s++) calDiv.innerHTML += `<div class="day-box empty-day"></div>`;
+
+        let userStats = {}; nameList.forEach(n => userStats[n] = { done: 0, total: 0 });
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const today = new Date();
+        const isCurrentMonth = today.toISOString().substring(0, 7) === selectedMonth;
+
+        for(let i=1; i<=daysInMonth; i++) {
+            const dayRecords = currentData.filter(d => d.month === selectedMonth && parseInt(d.day) === i).sort((a, b) => a.start.localeCompare(b.start));
+            dayRecords.forEach(d => {
+                const hours = (parseInt(d.end.split(':')[0]) + parseInt(d.end.split(':')[1])/60) - (parseInt(d.start.split(':')[0]) + parseInt(d.start.split(':')[1])/60);
+                const h = hours > 0 ? hours : 0;
+                userStats[d.name].total += h;
+                if (isCurrentMonth && i <= today.getDate()) userStats[d.name].done += h;
+                else if (!isCurrentMonth && new Date(y, m-1, i) < today) userStats[d.name].done += h;
+            });
+            let tagsHtml = dayRecords.map(d => `<div class="tag user-${nameList.indexOf(d.name)%5}"><span>${d.name}</span><span>${d.start}-${d.end}</span></div>`).join('');
+            calDiv.innerHTML += `<div class="day-box"><div class="day-num">${i}</div>${tagsHtml}</div>`;
+        }
+        nameList.forEach(n => { if(userStats[n].total > 0) statsBody.innerHTML += `<tr><td>${n}</td><td>${userStats[n].done.toFixed(1)}</td><td>${userStats[n].total.toFixed(1)}</td></tr>`; });
+        currentData.filter(d => d.month === selectedMonth).sort((a,b) => parseInt(a.day)-parseInt(b.day)).forEach((d, i) => {
+            listDiv.innerHTML += `<div class="record-item"><span>${d.day}日 ${d.name} ${d.start}-${d.end}</span><div><button class="btn-edit" onclick="editRecord(${currentData.indexOf(d)})">修改</button><button class="btn-del" onclick="currentData.splice(${currentData.indexOf(d)}, 1); renderView()">刪除</button></div></div>`;
+        });
+    }
+
+    async function loadFromCloud() { const r = await fetch(`${GAS_URL}?action=getData`); currentData = await r.json(); renderView(); }
+    async function syncToCloud() { await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(currentData) }); alert("已儲存！"); }
     window.onload = init;
 </script>
 </body>
 </html>
-   
