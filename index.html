@@ -2,18 +2,12 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工時系統</title>
+    <title>Bakery 工時系統</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 10px; }
-        .card { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        body { font-family: sans-serif; padding: 10px; background: #f4f7f6; }
+        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
         #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .day-box { border: 1px solid #ddd; min-height: 60px; font-size: 10px; padding: 2px; }
-        .day-num { font-weight: bold; color: #666; border-bottom: 1px solid #eee; }
-        /* 復刻 v19 風格 */
-        .tag { border-left: 3px solid #2196F3; background: #e3f2fd; margin-bottom: 1px; padding: 2px; }
-        .stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .stats-table td { border-bottom: 1px solid #eee; padding: 5px; }
+        .day-box { border: 1px solid #ddd; min-height: 80px; padding: 2px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -22,24 +16,19 @@
         <select id="nameInput"><option>站起來</option><option>佑廷</option><option>子珈</option></select>
         <select id="dayInput"></select>
         <button onclick="addRecord()">新增</button>
+        <button onclick="syncToCloud()">同步至雲端</button>
     </div>
     <div class="card">
-        <h3>班表預覽</h3>
         <div id="calendar"></div>
-    </div>
-    <div class="card">
-        <h3>統計</h3>
-        <table id="statsBody" class="stats-table"></table>
-        <button onclick="syncToCloud()" style="width:100%">儲存同步</button>
     </div>
 
 <script>
-    const GAS_URL = "填入你的連結";
+    // 這裡放入你剛給我的那組新網址  
+    //               https://script.google.com/macros/s/AKfycbwmLSoxg58dONNYlTRaOwCE-Yt7ST5A_UN0l0s4nzi5rFIOc7TtwnB0B54KNRiicyaY/exec
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmLSoxg58dONNYlTRaOwCE-Yt7ST5A_UN0l0s4nzi5rFIOc7TtwnB0B54KNRiicyaY/exec";
     let data = [];
-    
-    // 初始化
+
     async function init() {
-        // 生成日期
         for(let i=1; i<=31; i++) document.getElementById('dayInput').innerHTML += `<option>${i}</option>`;
         const res = await fetch(`${GAS_URL}?action=getData`);
         data = await res.json();
@@ -47,25 +36,25 @@
     }
 
     function render() {
-        const cal = document.getElementById('calendar');
-        cal.innerHTML = "";
+        document.getElementById('calendar').innerHTML = "";
         for(let i=1; i<=31; i++) {
-            const dayData = data.filter(r => r.day == i);
-            cal.innerHTML += `<div class="day-box"><div class="day-num">${i}</div>` + 
-                dayData.map(r => `<div class="tag">${r.name}<br>${r.start}-${r.end}</div>`).join('') + `</div>`;
+            let dayData = data.filter(r => r.day == i);
+            document.getElementById('calendar').innerHTML += `<div class="day-box"><div>${i}</div>` + 
+                dayData.map(r => `<div>${r.name}</div>`).join('') + `</div>`;
         }
+    }
+
+    function addRecord() {
+        data.push({month: "2026-03", name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: "08:00", end: "17:00"});
+        render();
     }
 
     async function syncToCloud() {
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
-        alert("同步成功");
-    }
-    
-    function addRecord() {
-        data.push({name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: "08:00", end: "17:00"});
-        render();
+        alert("同步完成！");
     }
     window.onload = init;
 </script>
 </body>
 </html>
+   
