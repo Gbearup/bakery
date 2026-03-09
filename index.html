@@ -6,113 +6,99 @@
     <title>工時統計系統</title>
     <style>
         :root { --primary-color: #4CAF50; --secondary-color: #2196F3; --bg-color: #f4f7f6; }
-        body { font-family: sans-serif; padding: 5px; background: var(--bg-color); }
-        .card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        h3 { margin-top: 0; font-size: 1em; color: #333; margin-bottom: 8px; }
-        .control-panel { display: flex; flex-wrap: wrap; gap: 4px; }
-        select, button { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
-        .btn-add { background: var(--primary-color); color: white; border: none; font-weight: bold; flex: 1; }
+        body { font-family: -apple-system, sans-serif; padding: 10px; background: var(--bg-color); }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h3 { margin-top: 0; color: #333; }
+        .control-panel { display: flex; flex-wrap: wrap; gap: 8px; }
+        select, button { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
+        .btn-add { background: var(--primary-color); color: white; border: none; font-weight: bold; flex: 1; cursor: pointer; }
         
-        /* 【關鍵：左邊版本的核心邏輯】 */
-        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
-        .week-header { text-align: center; font-weight: bold; font-size: 10px; padding: 2px; background: #eee; }
-        .day-box { border: 1px solid #ddd; min-height: 60px; padding: 1px; background: #fff; }
-        .day-num { font-weight: bold; font-size: 10px; color: #666; border-bottom: 1px solid #eee; margin-bottom: 1px; }
+        #calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .day-box { border: 1px solid #f0f0f0; min-height: 70px; padding: 4px; background: #fff; border-radius: 4px; }
+        .day-num { font-weight: bold; font-size: 12px; color: #999; border-bottom: 1px solid #f9f9f9; margin-bottom: 4px; }
         
-        /* 緊湊標籤：確保名字與時間在同一行，且字體極小化 */
-        .tag { 
-            font-size: 9px; 
-            padding: 1px 2px; 
-            margin-bottom: 1px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-left: 3px solid; 
-            white-space: nowrap; /* 強制不換行 */
-        }
+        /* v19 風格的標籤：保持名字在上、時間在下 */
+        .tag { font-size: 10px; padding: 2px 4px; margin-bottom: 2px; border-radius: 3px; line-height: 1.2; border-left: 3px solid; }
         .user-0 { background: #fff9c4; border-left-color: #fbc02d; color: #5d4037; } 
         .user-1 { background: #e1f5fe; border-left-color: #03a9f4; color: #01579b; } 
         .user-2 { background: #f3e5f5; border-left-color: #9c27b0; color: #4a148c; }
-        .user-3 { background: #e8f5e9; border-left-color: #4caf50; color: #1b5e20; }
-        .user-4 { background: #ffebee; border-left-color: #f44336; color: #b71c1c; }
-
-        .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .stats-table td { padding: 4px 2px; border-bottom: 1px solid #f0f0f0; }
-        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 12px; }
-        .btn-edit { background: #ff9800; color: white; border: none; padding: 2px 5px; cursor: pointer; font-size: 10px; }
-        .btn-del { background: #ff5252; color: white; border: none; padding: 2px 5px; cursor: pointer; font-size: 10px; margin-left: 3px; }
+        
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .stats-table td { padding: 8px 0; border-bottom: 1px solid #eee; }
+        .btn-del { background: #ff5252; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .btn-sync { background: var(--secondary-color); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="card" id="inputCard">
-        <h3 id="formTitle">新增/修改</h3>
+    <div class="card">
+        <h3 id="calendarTitle">📅 班表預覽</h3>
         <div class="control-panel">
             <select id="monthSelect" onchange="initCalendar()"></select>
-            <select id="nameInput"></select>
+            <select id="nameInput">
+                <option value="站起來">站起來</option>
+                <option value="佑廷">佑廷</option>
+                <option value="子珈">子珈</option>
+            </select>
             <select id="dayInput"></select>
             <select id="startTime"></select>
             <select id="endTime"></select>
-            <button class="btn-add" id="submitBtn" onclick="addRecord()">確認</button>
+            <button class="btn-add" onclick="addRecord()">確認新增</button>
         </div>
-    </div>
-    <div class="card">
-        <h3>📊 本月工時</h3>
-        <table class="stats-table"><tbody id="statsBody"></tbody></table>
-    </div>
-    <div class="card">
-        <h3 id="calendarTitle">📅 班表預覽</h3>
         <div id="calendar"></div>
     </div>
+
     <div class="card">
-        <h3>📋 詳細紀錄</h3>
-        <div id="recordList"></div>
+        <h3>📊 工時統計</h3>
+        <table class="stats-table" id="statsBody"></table>
+        <div id="recordList" style="margin-top:15px;"></div>
+        <button class="btn-sync" onclick="syncToCloud()">☁️ 同步至雲端</button>
     </div>
 
 <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwXPg3LmEBLhqkNXk9ZH73w7AZx0wp8oJ5iD6B80QjtIr2HicHPupz_WZDz-WVZJ_MIew/exec'; 
-    let nameList = [], currentData = [];
-    async function init() {
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwxvdNvCDBPN8Q0BwePsHJRkP5c0o12QNoTTfcomi8eHsOv1EgTEYerG7FpJ5rpO9aSzg/exec";
+    let currentData = [];
+    const nameList = ["站起來", "佑廷", "子珈"];
+
+    function init() {
         const monthSel = document.getElementById('monthSelect');
-        for(let i=-1; i<=1; i++) { let d = new Date(); d.setMonth(d.getMonth() + i); let s = d.toISOString().substring(0, 7); monthSel.innerHTML += `<option value="${s}">${s}</option>`; }
-        monthSel.value = new Date().toISOString().substring(0, 7);
-        const startSel = document.getElementById('startTime'), endSel = document.getElementById('endTime');
-        for(let h=8; h<24; h++) { ['00', '30'].forEach(m => { let t = `${h<10?'0'+h:h}:${m}`; startSel.innerHTML += `<option value="${t}">${t}</option>`; endSel.innerHTML += `<option value="${t}">${t}</option>`; }); }
-        const r = await fetch(`${GAS_URL}?action=getNames`); nameList = await r.json();
-        const nSel = document.getElementById('nameInput'); nameList.forEach(n => nSel.innerHTML += `<option value="${n}">${n}</option>`);
+        for(let i=-1; i<=1; i++) { let d = new Date(); d.setMonth(d.getMonth()+i); let s = d.toISOString().substring(0,7); monthSel.innerHTML += `<option value="${s}">${s}</option>`; }
+        monthSel.value = new Date().toISOString().substring(0,7);
+        for(let h=8; h<24; h++) { ['00','30'].forEach(m => { let t = `${h<10?'0'+h:h}:${m}`; document.getElementById('startTime').innerHTML += `<option value="${t}">${t}</option>`; document.getElementById('endTime').innerHTML += `<option value="${t}">${t}</option>`; }); }
         initCalendar(); loadFromCloud();
     }
+    
     function initCalendar() {
-        const dSel = document.getElementById('dayInput'); dSel.innerHTML = "";
         const [y, m] = document.getElementById('monthSelect').value.split('-');
-        const days = new Date(y, m, 0).getDate();
-        for(let i=1; i<=days; i++) dSel.innerHTML += `<option value="${i}">${i}日</option>`;
+        document.getElementById('calendarTitle').innerText = `📅 ${parseInt(m)}月班表預覽`;
+        const daySel = document.getElementById('dayInput'); daySel.innerHTML = "";
+        for(let i=1; i<=new Date(y, m, 0).getDate(); i++) daySel.innerHTML += `<option value="${i}">${i}日</option>`;
         renderView();
     }
-    function addRecord() { currentData.push({ month: document.getElementById('monthSelect').value, name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: document.getElementById('startTime').value, end: document.getElementById('endTime').value }); renderView(); }
+
     function renderView() {
-        const [y, m] = document.getElementById('monthSelect').value.split('-');
-        document.getElementById('calendarTitle').innerText = `📅 ${parseInt(m)}月班表`;
+        const selectedMonth = document.getElementById('monthSelect').value;
         const cal = document.getElementById('calendar'), stats = document.getElementById('statsBody'), list = document.getElementById('recordList');
         cal.innerHTML = ""; stats.innerHTML = ""; list.innerHTML = "";
-        ['日','一','二','三','四','五','六'].forEach(d => cal.innerHTML += `<div class="week-header">${d}</div>`);
-        const first = new Date(y, m-1, 1).getDay();
-        for(let s=0; s<first; s++) cal.innerHTML += `<div class="day-box"></div>`;
         
         let statsObj = {}; nameList.forEach(n => statsObj[n] = 0);
-        const days = new Date(y, m, 0).getDate();
+        const days = new Date(selectedMonth.split('-')[0], selectedMonth.split('-')[1], 0).getDate();
+        
         for(let i=1; i<=days; i++) {
-            const records = currentData.filter(d => d.month === document.getElementById('monthSelect').value && parseInt(d.day) === i);
-            records.forEach(d => {
-                const h = (parseInt(d.end.split(':')[0]) + parseInt(d.end.split(':')[1])/60) - (parseInt(d.start.split(':')[0]) + parseInt(d.start.split(':')[1])/60);
-                statsObj[d.name] += h > 0 ? h : 0;
-            });
-            let html = records.map(d => `<div class="tag user-${nameList.indexOf(d.name)%5}"><span>${d.name}</span><span>${d.start}</span></div>`).join('');
-            cal.innerHTML += `<div class="day-box"><div class="day-num">${i}</div>${html}</div>`;
+            const records = currentData.filter(d => d.month === selectedMonth && d.day == i);
+            cal.innerHTML += `<div class="day-box"><div class="day-num">${i}</div>` + 
+                records.map(d => {
+                    const h = (parseInt(d.end.split(':')[0])-parseInt(d.start.split(':')[0]));
+                    statsObj[d.name] += h;
+                    return `<div class="tag user-${nameList.indexOf(d.name)}">${d.name}<br>${d.start}-${d.end}</div>`;
+                }).join('') + `</div>`;
         }
-        nameList.forEach(n => { if(statsObj[n]>0) stats.innerHTML += `<tr><td>${n}</td><td>${statsObj[n].toFixed(1)}</td></tr>`; });
-        currentData.forEach((d, i) => list.innerHTML += `<div class="record-item"><span>${d.day}日 ${d.name} ${d.start}-${d.end}</span><button onclick="currentData.splice(${i},1); renderView()">刪除</button></div>`);
+        nameList.forEach(n => { if(statsObj[n]>0) stats.innerHTML += `<tr><td>${n}</td><td>${statsObj[n]} 小時</td></tr>`; });
+        currentData.filter(d => d.month === selectedMonth).forEach((d, i) => list.innerHTML += `<div class="record-item"><span>${d.day}日 ${d.name} (${d.start}-${d.end})</span><button class="btn-del" onclick="currentData.splice(${i},1); renderView()">刪除</button></div>`);
     }
-    async function loadFromCloud() { const r = await fetch(`${GAS_URL}?action=getData`); currentData = await r.json(); renderView(); }
+
+    async function loadFromCloud() { const r = await fetch(GAS_URL); currentData = await r.json(); renderView(); }
+    async function syncToCloud() { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(currentData) }); alert("同步成功！"); }
+    function addRecord() { currentData.push({month: document.getElementById('monthSelect').value, name: document.getElementById('nameInput').value, day: document.getElementById('dayInput').value, start: document.getElementById('startTime').value, end: document.getElementById('endTime').value}); renderView(); }
     window.onload = init;
 </script>
 </body>
